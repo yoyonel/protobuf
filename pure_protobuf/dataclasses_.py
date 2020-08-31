@@ -185,7 +185,7 @@ def make_field(number: int, name: str, type_: Any) -> Tuple[int, Field]:
         # => more simpler for us :p
         protobuf_type = serializer.inner.type_.__name__
     else:
-        protobuf_type = PYTHON_TO_PROTOBUF_TYPES[type_]
+        protobuf_type = PYTHON_TO_PROTOBUF_TYPES.get(type_, None)
 
     if not is_repeated:
         # Non-repeated field.

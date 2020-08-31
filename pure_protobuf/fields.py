@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
 
 from pure_protobuf.enums import WireType
 from pure_protobuf.io_ import IO, Dumps
@@ -14,7 +14,7 @@ from pure_protobuf.serializers import Serializer, bytes_serializer, unsigned_var
 # TODO: perhaps it's good to add a type parameter:
 # TODO: https://docs.python.org/3/library/typing.html#user-defined-generic-types
 class Field(Dumps, ABC):
-    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: str):
+    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: Optional[str] = None):
         self.number = number
         self.name = name
         self.serializer = serializer
@@ -64,7 +64,7 @@ class NonRepeatedField(Field):
     See also: https://developers.google.com/protocol-buffers/docs/encoding#optional
     """
 
-    def __init__(self, number: int, name: str, serializer: Serializer, is_optional: bool, proto_type: str):
+    def __init__(self, number: int, name: str, serializer: Serializer, is_optional: bool, proto_type: Optional[str] = None):
         super().__init__(number, name, serializer, proto_type)
         self.is_optional = is_optional
 
@@ -137,7 +137,7 @@ class PackedRepeatedField(RepeatedField):
     See also: https://developers.google.com/protocol-buffers/docs/encoding#packed
     """
 
-    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: str):
+    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: Optional[str] = None):
         super().__init__(number, name, serializer, proto_type)
         self.wire_type = WireType.BYTES
 
