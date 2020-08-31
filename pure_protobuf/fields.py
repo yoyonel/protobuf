@@ -14,11 +14,12 @@ from pure_protobuf.serializers import Serializer, bytes_serializer, unsigned_var
 # TODO: perhaps it's good to add a type parameter:
 # TODO: https://docs.python.org/3/library/typing.html#user-defined-generic-types
 class Field(Dumps, ABC):
-    def __init__(self, number: int, name: str, serializer: Serializer):
+    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: str):
         self.number = number
         self.name = name
         self.serializer = serializer
         self.wire_type = serializer.wire_type
+        self.proto_type = proto_type
 
     @abstractmethod
     def validate(self, value: Any):
@@ -63,8 +64,8 @@ class NonRepeatedField(Field):
     See also: https://developers.google.com/protocol-buffers/docs/encoding#optional
     """
 
-    def __init__(self, number: int, name: str, serializer: Serializer, is_optional: bool):
-        super().__init__(number, name, serializer)
+    def __init__(self, number: int, name: str, serializer: Serializer, is_optional: bool, proto_type: str):
+        super().__init__(number, name, serializer, proto_type)
         self.is_optional = is_optional
 
     def validate(self, value: Any):
@@ -136,8 +137,8 @@ class PackedRepeatedField(RepeatedField):
     See also: https://developers.google.com/protocol-buffers/docs/encoding#packed
     """
 
-    def __init__(self, number: int, name: str, serializer: Serializer):
-        super().__init__(number, name, serializer)
+    def __init__(self, number: int, name: str, serializer: Serializer, proto_type: str):
+        super().__init__(number, name, serializer, proto_type)
         self.wire_type = WireType.BYTES
 
     def dump(self, value: Any, io: IO):

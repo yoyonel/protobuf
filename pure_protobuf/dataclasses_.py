@@ -15,13 +15,12 @@ from pure_protobuf.enums import WireType
 from pure_protobuf.fields import Field, NonRepeatedField, PackedRepeatedField, UnpackedRepeatedField
 from pure_protobuf.io_ import IO
 from pure_protobuf.serializers import IntEnumSerializer, MessageSerializer, PackingSerializer, Serializer
-from pure_protobuf.types import NoneType
+from pure_protobuf.types import NoneType, BoolValue
 
 try:
     import dataclasses
 except ImportError:
     raise ImportError('dataclasses interface requires dataclasses support')
-
 
 T = TypeVar('T')
 
@@ -70,6 +69,7 @@ class OneOf:
     Defines an oneof field.
     See also: https://developers.google.com/protocol-buffers/docs/proto3#oneof
     """
+
     def __init__(self, *fields: Field):
         self.fields = fields
         # TODO: implement automatic clearing.
@@ -115,6 +115,17 @@ def optional_field(number: int, *args, **kwargs) -> dataclasses.Field:
     return field(number, *args, default=None, **kwargs)
 
 
+def to_proto(cls: Type[T]) -> str:
+    def _add_repeated(field_) -> str:
+        return "repeated " if isinstance(field_, UnpackedRepeatedField) or isinstance(field_, PackedRepeatedField) else ""
+
+    return "\n".join([
+        f"message {cls.__name__} {{",
+        *[f"    {_add_repeated(field_)}{field_.proto_type} {field_.name} = {number};" for number, field_ in cls.__protobuf_fields__.items()],
+        "}"
+    ])
+
+
 def message(cls: Type[T]) -> Type[T]:
     """
     Returns the same class as was passed in, with additional dunder attributes needed for
@@ -139,6 +150,7 @@ def message(cls: Type[T]) -> Type[T]:
     cls.merge_from = Message.merge_from
     cls.load = classmethod(load)
     cls.loads = classmethod(loads)
+    cls.to_proto = classmethod(to_proto)
 
     return cls
 
@@ -166,16 +178,25 @@ def make_field(number: int, name: str, type_: Any) -> Tuple[int, Field]:
         except KeyError as e:
             raise TypeError(f'type is not serializable: {type_}') from e
 
+    # is an embedded message ?
+    if hasattr(serializer, "inner"):
+        # we don't resolve (here) the dependency or "inclusion" of embedded message
+        # this resolution will be handle by protoc after in build stage
+        # => more simpler for us :p
+        protobuf_type = serializer.inner.type_.__name__
+    else:
+        protobuf_type = PYTHON_TO_PROTOBUF_TYPES[type_]
+
     if not is_repeated:
         # Non-repeated field.
-        return number, NonRepeatedField(number, name, serializer, is_optional)
+        return number, NonRepeatedField(number, name, serializer, is_optional, protobuf_type)
     elif serializer.wire_type != WireType.BYTES:
         # Repeated fields of scalar numeric types are packed by default.
         # See also: https://developers.google.com/protocol-buffers/docs/encoding#packed
-        return number, PackedRepeatedField(number, name, serializer)
+        return number, PackedRepeatedField(number, name, serializer, protobuf_type)
     else:
         # Repeated field of other type.
-        return number, UnpackedRepeatedField(number, name, serializer)
+        return number, UnpackedRepeatedField(number, name, serializer, protobuf_type)
 
 
 def get_optional(type_: Any) -> Tuple[bool, Any]:
@@ -224,6 +245,33 @@ SERIALIZERS: Dict[Any, Serializer] = {
     types.uint64: serializers.UnsignedInt64Serializer(),
     types.uint: serializers.unsigned_varint_serializer,  # is not a part of the standard
     # TODO: `map`.
+    # google.protobuf
+    types.UInt32Value: serializers.UnsignedInt32Serializer(),
+    BoolValue: serializers.BooleanSerializer(),
+    types.StringValue: serializers.StringSerializer(),
+}
+
+PYTHON_TO_PROTOBUF_TYPES: Dict[Any, str] = {
+    bool: "bool",
+    bytes: "str",
+    ByteString: "str",
+    float: "float",
+    int: "int32",
+    str: "string",
+    types.double: "double",
+    types.fixed32: "fixed32",
+    types.fixed64: "fixed64",
+    types.sfixed32: "sfixed32",
+    types.sfixed64: "sfixed64",
+    types.sint32: "sint32",
+    types.sint64: "sint64",
+    types.uint32: "uint32",
+    types.uint64: "uint64",
+    types.uint: "uint32",
+    # TODO: `map`.
+    types.UInt32Value: "google.protobuf.UInt32Value",
+    types.BoolValue: "google.protobuf.BoolValue",
+    types.StringValue: "google.protobuf.StringValue",
 }
 
 __all__ = [

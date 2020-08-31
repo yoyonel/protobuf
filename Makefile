@@ -5,7 +5,7 @@ BIN := venv/bin
 
 .PHONY: venv
 venv:
-	@python3.8 -m venv venv
+	@python3 -m venv venv
 	@$(BIN)/pip install isort flake8 pytest pytest-cov mypy
 
 .PHONY: test check

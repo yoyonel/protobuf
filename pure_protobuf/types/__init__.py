@@ -21,5 +21,9 @@ uint64 = NewType('uint64', int)
 int32 = uint32  # TODO: is it actually the same?
 int64 = uint64  # TODO: is it actually the same?
 
+UInt32Value = NewType("UInt32Value", int)
+BoolValue = NewType("BoolValue", bool)
+StringValue = NewType("StringValue", str)
+
 # Not available in `typing`.
 NoneType = type(None)
