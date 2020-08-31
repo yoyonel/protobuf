@@ -121,7 +121,8 @@ def to_proto(cls: Type[T]) -> str:
 
     return "\n".join([
         f"message {cls.__name__} {{",
-        *[f"    {_add_repeated(field_)}{field_.proto_type} {field_.name} = {number};" for number, field_ in cls.__protobuf_fields__.items()],
+        *[f"    {_add_repeated(field_)}{field_.proto_type} {field_.name} = {number};" 
+        for number, field_ in cls.__protobuf_fields__.items()],
         "}"
     ])
 

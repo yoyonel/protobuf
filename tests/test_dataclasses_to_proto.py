@@ -125,7 +125,7 @@ def class_full_location() -> Tuple[Type, str]:
 
 @fixture
 def class_compared_location(class_full_location: Tuple[Type, str]) -> Tuple[Type, str]:
-    class_full_location, protobuf_full_location = class_full_location
+    class_full_location, _ = class_full_location
 
     @message
     @dataclass
