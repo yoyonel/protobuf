@@ -145,6 +145,28 @@ def class_compared_location(class_full_location: Tuple[Type, str]) -> Tuple[Type
 }"""
 
 
+@fixture
+def class_input_ref_data_negative_duplicate() -> Tuple[Type, str]:
+    @message
+    @dataclass
+    class InputRefDataNegativeDuplicate:
+        @message
+        @dataclass
+        class TupleSkillsIds:
+            skill_a_id: uint32 = field(1)
+            skill_b_id: uint32 = field(2)
+
+        negative_duplicate: List[TupleSkillsIds] = field(1)
+
+    return InputRefDataNegativeDuplicate, """message InputRefDataNegativeDuplicate {
+    message TupleSkillsIds {
+        uint32 skill_a_id = 1;
+        uint32 skill_b_id = 2;
+    }
+    repeated TupleSkillsIds negative_duplicate = 1;
+}"""
+
+
 def test_class_git_info_to_proto(class_git_info: Tuple[Any, str]):
     class_git_info, expected_result = class_git_info
     assert class_git_info.to_proto() == expected_result
@@ -175,3 +197,9 @@ def test_class_compared_location_to_proto(class_full_location: Tuple[Any, str], 
     class_compared_location, expected_protobuf_compared_location = class_compared_location
     assert class_full_location.to_proto() == expected_protobuf_full_location
     assert class_compared_location.to_proto() == expected_protobuf_compared_location
+
+
+def test_class_input_ref_data_negative_duplicate(class_input_ref_data_negative_duplicate: Tuple[Any, str]):
+    class_input_ref_data_negative_duplicate, expected_protobuf = class_input_ref_data_negative_duplicate
+    assert class_input_ref_data_negative_duplicate.to_proto() == expected_protobuf
+
