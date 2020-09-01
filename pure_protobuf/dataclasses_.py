@@ -115,16 +115,18 @@ def optional_field(number: int, *args, **kwargs) -> dataclasses.Field:
     return field(number, *args, default=None, **kwargs)
 
 
-def to_proto(cls: Type[T]) -> str:
+def to_proto(cls: Type[T], indent_level: int = 0) -> str:
     def _add_repeated(field_) -> str:
         return "repeated " if isinstance(field_, UnpackedRepeatedField) or isinstance(field_, PackedRepeatedField) else ""
 
-    return "\n".join([
-        f"message {cls.__name__} {{",
-        *[f"    {_add_repeated(field_)}{field_.proto_type} {field_.name} = {number};" 
-        for number, field_ in cls.__protobuf_fields__.items()],
-        "}"
-    ])
+    return "\n".join(
+        f"{' ' * 4 * indent_level}{msg_line}" for msg_line in [
+            f"message {cls.__name__} {{",
+            *[inner_class.to_proto(indent_level=indent_level + 1) for inner_class in [c for c in vars(cls).values() if isinstance(c, type(cls))]],
+            *[f"{' ' * 4}{_add_repeated(field_)}{field_.proto_type} {field_.name} = {number};" for number, field_ in cls.__protobuf_fields__.items()],
+            "}"
+        ]
+    )
 
 
 def message(cls: Type[T]) -> Type[T]:
